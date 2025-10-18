@@ -1,9 +1,9 @@
-# Expense DEV Infrastructure
+# roboshop DEV Infrastructure
 
 * Make sure infra is created. 
 * Every resource should have dev in its name, so that it will not overlap with prod resources.
 
-Once infra is setup. We need to configure ingress controller to provide internet access to our expense application.
+Once infra is setup. We need to configure ingress controller to provide internet access to our roboshop application.
 
 We are using bastion as our EKS client, so it will have
 * K9S
@@ -16,7 +16,7 @@ We are using bastion as our EKS client, so it will have
 * Make sure MySQL instance allows port no 3306 from bastion
 
 ```
-mysql -h expense-dev.czn6yzxlcsiv.us-east-1.rds.amazonaws.com -u root -pExpenseApp1
+mysql -h roboshop-dev.czn6yzxlcsiv.us-east-1.rds.amazonaws.com -u root -proboshopApp1
 ```
 ```
 USE transactions;
@@ -29,10 +29,10 @@ CREATE TABLE IF NOT EXISTS transactions (
 );
 ```
 ```
-CREATE USER IF NOT EXISTS 'expense'@'%' IDENTIFIED BY 'ExpenseApp@1';
+CREATE USER IF NOT EXISTS 'roboshop'@'%' IDENTIFIED BY 'roboshopApp@1';
 ```
 ```
-GRANT ALL ON transactions.* TO 'expense'@'%';
+GRANT ALL ON transactions.* TO 'roboshop'@'%';
 ```
 ```
 FLUSH PRIVILEGES;
@@ -53,16 +53,16 @@ aws configure
 ```
 
 ```
-aws eks update-kubeconfig --region us-east-1 --name expense-dev
+aws eks update-kubeconfig --region us-east-1 --name roboshop-dev
 ```
 
 ```
 kubectl get nodes
 ```
 
-* Create namespace expense
+* Create namespace roboshop
 ```
-kubectl create namespace expense
+kubectl create namespace roboshop
 ```
 
 * IAM policy
@@ -80,10 +80,10 @@ aws iam create-policy \
 * Create Service account. Replace your account ID.
 ```
 eksctl create iamserviceaccount \
---cluster=expense-dev \
+--cluster=roboshop-dev \
 --namespace=kube-system \
 --name=aws-load-balancer-controller \
---attach-policy-arn=arn:aws:iam::315069654700:policy/AWSLoadBalancerControllerIAMPolicy \
+--attach-policy-arn=arn:aws:iam::658775564324:policy/AWSLoadBalancerControllerIAMPolicy \
 --override-existing-serviceaccounts \
 --region us-east-1 \
 --approve
@@ -96,7 +96,7 @@ helm repo add eks https://aws.github.io/eks-charts
 ```
 
 ```
-helm install aws-load-balancer-controller eks/aws-load-balancer-controller -n kube-system --set clusterName=expense-dev --set serviceAccount.create=true --set serviceAccount.name=aws-load-balancer-controller
+helm install aws-load-balancer-controller eks/aws-load-balancer-controller -n kube-system --set clusterName=roboshop-dev --set serviceAccount.create=true --set serviceAccount.name=aws-load-balancer-controller
 ```
 
 * Make sure load balancer pods are running
