@@ -1,5 +1,5 @@
 ########################################
-# AWS Security Groups for Expense Project
+# AWS Security Groups for RoboShop Project
 # Environment: ${var.environment}
 # Author: Trinath
 ########################################
