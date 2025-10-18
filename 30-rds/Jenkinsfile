@@ -1,0 +1,58 @@
+pipeline {
+    agent { label 'AGENT-1' }
+    environment { 
+        PROJECT = 'ROBOSHOP'
+        COMPONENT = 'BACKEND' 
+        DEPLOY_TO = "production"
+    }
+    options {
+        disableConcurrentBuilds()
+        timeout(time: 30, unit: 'MINUTES')
+        ansiColor('xterm')
+    }
+    parameters{
+        choice(name: 'ACTION', choices: ['apply', 'destroy'], description: 'Pick something')
+    } 
+    stages {
+        stage('Init') {
+            steps {
+               script{
+                withAWS(region: 'us-east-1', credentials: 'aws-creds') {
+                    sh """
+                        cd 30-rds
+                        terraform init -reconfigure
+                        terraform plan
+                    """
+                }
+                 
+               }
+            }
+        }
+        stage('Apply') {
+            steps {
+               script{
+                withAWS(region: 'us-east-1', credentials: 'aws-creds') {
+                    sh """
+                        cd 30-rds
+                        terraform apply -auto-approve
+                    """
+                }
+                 
+               }
+            }
+        }
+        
+    }
+    post { 
+        always { 
+            echo 'I will always say Hello again!'
+            deleteDir()
+        }
+        failure { 
+            echo 'I will run when pipeline is failed'
+        }
+        success { 
+            echo 'I will run when pipeline is success'
+        }
+    }
+}

@@ -1,0 +1,87 @@
+pipeline {
+    agent { label 'AGENT-1' }
+    environment { 
+        PROJECT = 'ROBOSHOP'
+        COMPONENT = 'BACKEND' 
+        DEPLOY_TO = "production"
+    }
+    options {
+        disableConcurrentBuilds()
+        timeout(time: 50, unit: 'MINUTES')
+        ansiColor('xterm')
+    }
+    parameters{
+        choice(name: 'ACTION', choices: ['apply', 'destroy'], description: 'Pick something')
+    } 
+    stages {
+        stage('Init') {
+            steps {
+               script{
+                withAWS(region: 'us-east-1', credentials: 'aws-creds') {
+                    sh """
+                        cd 70-ingress-alb
+                        terraform init -reconfigure
+                        
+                    """
+                }
+                 
+               }
+            }
+        }
+        stage('Apply or Destroy') {
+            steps {
+               script{
+                withAWS(region: 'us-east-1', credentials: 'aws-creds') {
+                    
+                     if (params.ACTION == 'apply') {
+                        sh """
+                            cd 70-ingress-alb
+                            terraform plan
+                            terraform apply -auto-approve
+                        """
+                    } else {
+                        sh """
+                            cd 70-ingress-alb
+                            terraform destroy -auto-approve
+                        """
+                    }
+                }
+                 
+               }
+            }
+        }
+        stage('Destroy Infra') {
+            when { 
+                expression { params.ACTION == 'destroy'}
+            }
+            steps {
+               script{
+                withAWS(region: 'us-east-1', credentials: 'aws-creds') {
+                    def list = ["60-acm", "50-ecr", "40-eks", "30-rds", "20-bastion", "10-sg", "00-vpc"]
+                    for(item in list){
+                        sh """
+                            cd $item
+                            terraform init -reconfigure
+                            terraform destroy -auto-approve
+                        """
+                    }
+                }
+                 
+               }
+            }
+        }
+        
+    }
+    post { 
+        always { 
+            echo 'I will always say Hello again!'
+            deleteDir()
+        }
+        failure { 
+            echo 'I will run when pipeline is failed'
+        }
+        success { 
+            echo 'I will run when pipeline is success'
+        }
+    }
+}
